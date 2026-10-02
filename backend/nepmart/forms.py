@@ -6,7 +6,7 @@ class LoginForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput)
 
 
-class CheckoutForm(forms.Form):
+class heckoutForm(forms.Form):
     name = forms.CharField()
     phone = forms.CharField()
     address = forms.CharField()
