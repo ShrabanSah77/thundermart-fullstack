@@ -1,0 +1,17 @@
+<!-- Register_view -->
+ {% block content %}
+ <h2>Register</h2>
+<form method="POST" onsubmit="return validateForm()">
+    {% csrf_token %}
+    <input class="form-control mb-2" type="text" name="username" placeholder="Username"><br>
+    <input class="form-control mb-2" type="password" name="password" placeholder="New Password"><br>
+    <input class="form-control mb-2" type="password" name="password" placeholder="Confirm Password"><br>
+    <button class="btn btn-success">Register</button>
+</form>
+
+<p><h3>Already have an account?
+<a href="{% url 'login' %}">Login</a>
+</h3></p>
+
+
+{% endblock %}

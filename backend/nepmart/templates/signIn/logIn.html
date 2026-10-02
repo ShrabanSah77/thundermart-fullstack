@@ -1,0 +1,22 @@
+<!-- login_view -->
+
+<h2>Login Please</h2>
+
+<!-- <p>Redirect: {{ next }}</p> -->
+
+<form method="POST" action="?next={{ next }}">
+    {% csrf_token %}
+
+    <input class="form-control mb-2" type="text" name="username" placeholder="username">
+    <input class="form-control mb-2" type="password" name="password" placeholder="Password">
+
+    <input type="hidden" name="next" value="{{ next }}">
+
+    <button class="btn btn-primary">Login</button>
+</form>
+
+<p><h3>Don't have an account yet?
+<a href="{% url 'register' %}">Register Here</a>
+<p><h3>Forgot your password?
+<a href="{% url 'forgot_password' %}">Click here</a>
+</h3></p>
