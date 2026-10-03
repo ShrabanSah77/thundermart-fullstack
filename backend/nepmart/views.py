@@ -259,6 +259,154 @@ def checkout(request):
         'total': total
     })
 
+    # React Checkout API
+
+@login_required
+def checkout_api(request):
+
+    if request.method != 'POST':
+        return JsonResponse(
+            {
+                'error': 'POST request required.'
+            },
+            status=405
+        )
+
+    try:
+        data = request.POST
+
+        name = data.get('name')
+        phone = data.get('phone')
+        address = data.get('address')
+        payment_method = data.get('payment_method')
+
+        if not name or not phone or not address:
+            return JsonResponse(
+                {
+                    'error': 'Name, phone and address are required.'
+                },
+                status=400
+            )
+
+        if payment_method not in ['COD', 'CARD']:
+            return JsonResponse(
+                {
+                    'error': 'Invalid payment method.'
+                },
+                status=400
+            )
+
+        # Get React cart from request
+        cart = request.session.get('cart', {})
+
+        if not cart:
+            return JsonResponse(
+                {
+                    'error': 'Your cart is empty.'
+                },
+                status=400
+            )
+
+        cart_items = []
+        total = 0
+
+        for product_id, quantity in cart.items():
+
+            product = get_object_or_404(
+                Product,
+                id=product_id
+            )
+
+            quantity = int(quantity)
+
+            if quantity <= 0:
+                continue
+
+            # Check stock
+            if product.stock < quantity:
+                return JsonResponse(
+                    {
+                        'error': f'Only {product.stock} '
+                                 f'{product.name} available.'
+                    },
+                    status=400
+                )
+
+            subtotal = product.price * quantity
+
+            total += subtotal
+
+            cart_items.append({
+                'product': product,
+                'quantity': quantity,
+                'subtotal': subtotal
+            })
+
+        if not cart_items:
+            return JsonResponse(
+                {
+                    'error': 'Your cart is empty.'
+                },
+                status=400
+            )
+
+        # Create Order
+
+        order = Order.objects.create(
+            user=request.user,
+            name=name,
+            phone=phone,
+            address=address,
+            payment_method=payment_method,
+            total_price=total
+        )
+
+        # Create Order Items
+
+        for item in cart_items:
+
+            OrderItem.objects.create(
+                order=order,
+                product=item['product'],
+                quantity=item['quantity'],
+                price=item['product'].price
+            )
+
+            # Reduce stock
+            item['product'].stock -= item['quantity']
+            item['product'].save()
+
+        # Empty Django session cart
+        request.session['cart'] = {}
+        request.session.modified = True
+
+        return JsonResponse(
+            {
+                'success': True,
+                'message': 'Order placed successfully.',
+                'order': {
+                    'id': order.id,
+                    'name': order.name,
+                    'total_price': float(
+                        order.total_price
+                    ),
+                    'status': order.status,
+                    'payment_method': order.payment_method,
+                    'created_at': order.created_at.isoformat()
+                }
+            },
+            status=201
+        )
+
+    except Exception as e:
+
+        return JsonResponse(
+            {
+                'error': str(e)
+            },
+            status=500
+        )
+
 # React API - Products
 
 def product_api(request):
@@ -296,6 +444,7 @@ def product_api(request):
     return JsonResponse({
         'products': data
     })
+
 
 def category_api(request):
     categories = Category.objects.all().order_by('name')

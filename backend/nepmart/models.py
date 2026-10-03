@@ -23,7 +23,6 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-
 # Model for Products
 
 class Product(models.Model):
