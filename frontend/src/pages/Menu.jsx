@@ -1,46 +1,66 @@
+import { useEffect, useState } from "react";
+import { getProducts } from "../services/api";
+
 function Menu() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  async function loadProducts() {
+    try {
+      const data = await getProducts();
+
+      setProducts(data.products);
+    } catch (error) {
+      console.error(error);
+      setError("Unable to load products.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="page">
+        <h1>Shop</h1>
+        <p>Loading products...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page">
+        <h1>Shop</h1>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="page">
-      <h1>Our Menu</h1>
+      <h1>Shop</h1>
 
-      <p>Browse our delicious food and drinks.</p>
+      <p>Browse products available at ThunderMart.</p>
 
       <div className="products">
-        <div className="product-card">
-          <div className="product-image">🍔</div>
+        {products.map((product) => (
+          <div className="product-card" key={product.id}>
+            <div className="product-image">🛒</div>
 
-          <h3>Classic Burger</h3>
+            <h3>{product.name}</h3>
 
-          <p>Delicious burger with fresh vegetables and sauce.</p>
+            <p>{product.description}</p>
 
-          <strong>$12.99</strong>
+            <strong>${product.price.toFixed(2)}</strong>
 
-          <button>Add to Cart</button>
-        </div>
-
-        <div className="product-card">
-          <div className="product-image">🍕</div>
-
-          <h3>Cheese Pizza</h3>
-
-          <p>Fresh pizza topped with delicious melted cheese.</p>
-
-          <strong>$14.99</strong>
-
-          <button>Add to Cart</button>
-        </div>
-
-        <div className="product-card">
-          <div className="product-image">🍟</div>
-
-          <h3>French Fries</h3>
-
-          <p>Crispy golden fries.</p>
-
-          <strong>$5.99</strong>
-
-          <button>Add to Cart</button>
-        </div>
+            <button>Add to Cart</button>
+          </div>
+        ))}
       </div>
     </div>
   );
