@@ -15,4 +15,8 @@ urlpatterns = [
     path('increase-cart/<int:product_id>/', views.increase_cart, name='increase_cart'),
     path('decrease-cart/<int:product_id>/', views.decrease_cart, name='decrease_cart'),
     path('checkout/', views.checkout, name='checkout'),
+
+# React API
+
+path('api/products/', views.product_api, name='product_api'),
 ]
