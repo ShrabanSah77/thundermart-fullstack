@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import CheckoutForm, LoginForm
-from .models import Customer, Product, Order, OrderItem
+from .models import Customer, Category, Product, Order, OrderItem
 from django.contrib.auth.decorators import login_required
 
 # Create your views here.
@@ -259,24 +259,57 @@ def checkout(request):
         'total': total
     })
 
-# =========================
 # React API - Products
-# =========================
 
 def product_api(request):
-    products = Product.objects.all().order_by('-created_at')
+    products = Product.objects.select_related(
+        'category'
+    ).all().order_by('-created_at')
 
     data = []
 
     for product in products:
+
+        final_price = float(product.price)
+
+        if product.discount:
+            final_price = final_price - (
+                final_price * float(product.discount) / 100
+            )
+
         data.append({
             'id': product.id,
             'name': product.name,
             'price': float(product.price),
+            'discount': float(product.discount),
+            'final_price': round(final_price, 2),
             'description': product.description,
+            'brand': product.brand,
+            'stock': product.stock,
+            'image_url': product.image_url,
+            'category': {
+                'id': product.category.id if product.category else None,
+                'name': product.category.name if product.category else None,
+            },
         })
 
     return JsonResponse({
         'products': data
     })
 
+def category_api(request):
+    categories = Category.objects.all().order_by('name')
+
+    data = []
+
+    for category in categories:
+        data.append({
+            'id': category.id,
+            'name': category.name,
+            'description': category.description,
+            'product_count': category.products.count(),
+        })
+
+    return JsonResponse({
+        'categories': data
+    })
