@@ -4,7 +4,10 @@ function Home() {
       <section className="hero">
         <h1>Welcome to ThunderMart</h1>
 
-        <p>Delicious food, delivered right to your door.</p>
+        <p>
+          Fresh and organin vegetables, Attractive Household materials,
+          delivered right to your door.
+        </p>
 
         <a href="/menu" className="button">
           Order Now
@@ -16,17 +19,20 @@ function Home() {
 
         <div className="features">
           <div className="feature-card">
-            <h3>🍔 Fresh Food</h3>
-            <p>Freshly prepared meals made with quality ingredients.</p>
+            <h3>Fresh and Organic vegetables</h3>
+            <p>
+              Numbers of household items and all the type of groceries you need.
+            </p>
           </div>
 
           <div className="feature-card">
-            <h3>🚀 Fast Delivery</h3>
-            <p>Get your favorite food delivered quickly.</p>
+            <h3>🚀 Fast Delivery option</h3>
+            <p>Pickup option in your convinent time.</p>
           </div>
 
           <div className="feature-card">
             <h3>⭐ Great Service</h3>
+            <h3>⭐ Awesome Products</h3>
             <p>We care about providing an excellent customer experience.</p>
           </div>
         </div>
