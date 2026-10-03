@@ -1,32 +1,43 @@
 import { useEffect, useState } from "react";
-import { getProducts } from "../services/api";
+
+import { getProducts, getCategories } from "../services/api";
+
+import ProductCard from "../components/ProductCard";
+import CategoryCard from "../components/categoryCard";
 
 function Menu() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    loadProducts();
-  }, []);
+    async function loadStore() {
+      try {
+        const [productData, categoryData] = await Promise.all([
+          getProducts(),
+          getCategories(),
+        ]);
 
-  async function loadProducts() {
-    try {
-      const data = await getProducts();
+        setProducts(productData.products);
+        setCategories(categoryData.categories);
+      } catch (error) {
+        console.error(error);
 
-      setProducts(data.products);
-    } catch (error) {
-      console.error(error);
-      setError("Unable to load products.");
-    } finally {
-      setLoading(false);
+        setError("Unable to load ThunderMart products.");
+      } finally {
+        setLoading(false);
+      }
     }
-  }
+
+    loadStore();
+  }, []);
 
   if (loading) {
     return (
       <div className="page">
-        <h1>Shop</h1>
+        <h1>ThunderMart Shop</h1>
         <p>Loading products...</p>
       </div>
     );
@@ -35,7 +46,7 @@ function Menu() {
   if (error) {
     return (
       <div className="page">
-        <h1>Shop</h1>
+        <h1>ThunderMart Shop</h1>
         <p>{error}</p>
       </div>
     );
@@ -43,25 +54,33 @@ function Menu() {
 
   return (
     <div className="page">
-      <h1>Shop</h1>
+      <h1>Shop at ThunderMart</h1>
 
-      <p>Browse products available at ThunderMart.</p>
+      <p>Find everything you need for your home.</p>
 
-      <div className="products">
-        {products.map((product) => (
-          <div className="product-card" key={product.id}>
-            <div className="product-image">🛒</div>
+      {/* Categories */}
 
-            <h3>{product.name}</h3>
+      <section>
+        <h2>Shop by Category</h2>
 
-            <p>{product.description}</p>
+        <div className="categories">
+          {categories.map((category) => (
+            <CategoryCard key={category.id} category={category} />
+          ))}
+        </div>
+      </section>
 
-            <strong>${product.price.toFixed(2)}</strong>
+      {/* Products */}
 
-            <button>Add to Cart</button>
-          </div>
-        ))}
-      </div>
+      <section>
+        <h2>All Products</h2>
+
+        <div className="products">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
