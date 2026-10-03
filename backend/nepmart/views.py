@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -258,3 +258,25 @@ def checkout(request):
         'cart_items': cart_items,
         'total': total
     })
+
+# =========================
+# React API - Products
+# =========================
+
+def product_api(request):
+    products = Product.objects.all().order_by('-created_at')
+
+    data = []
+
+    for product in products:
+        data.append({
+            'id': product.id,
+            'name': product.name,
+            'price': float(product.price),
+            'description': product.description,
+        })
+
+    return JsonResponse({
+        'products': data
+    })
+
