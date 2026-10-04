@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
@@ -273,12 +274,12 @@ def checkout_api(request):
         )
 
     try:
-        data = request.POST
-
+        data = json.loads(request.body)
         name = data.get('name')
         phone = data.get('phone')
         address = data.get('address')
         payment_method = data.get('payment_method')
+        cart = data.get('cart', [])
 
         if not name or not phone or not address:
             return JsonResponse(
