@@ -1,9 +1,24 @@
-import { Link } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useCart } from "../context/CartContext";
 
 function Navbar() {
   const { cartCount } = useCart();
+  const navigate = useNavigate();
+
+  const [search, setSearch] = useState("");
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+
+    const query = search.trim();
+
+    if (!query) {
+      return;
+    }
+
+    navigate(`/menu?search=${encodeURIComponent(query)}`);
+  };
 
   return (
     <nav className="navbar">
@@ -11,6 +26,15 @@ function Navbar() {
         <Link to="/" className="logo">
           ThunderMart
         </Link>
+
+        <form className="search-bar" onSubmit={handleSearch}>
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </form>
 
         <div className="nav-links">
           <Link to="/">Home</Link>
