@@ -100,10 +100,10 @@ class Order(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
 
-    PAYMENT_CHOICE = {
-        ('COD', 'Cash on Delivery'),
-        ('CARD', 'Card'),
-    }
+    PAYMENT_CHOICE = [
+    ('COD', 'Cash on Delivery'),
+    ('CARD', 'Card'),
+]
 
     payment_method = models.CharField(max_length=10, choices=PAYMENT_CHOICE)   
 
