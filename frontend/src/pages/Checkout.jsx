@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useCart } from "../context/CartContext";
@@ -17,26 +17,77 @@ function Checkout() {
   });
 
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
+  const [checkingLogin, setCheckingLogin] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkLogin() {
+      try {
+        const response = await fetch("/api/current-user/", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (cancelled) return;
+
+        if (response.ok) {
+          const data = await response.json();
+
+          if (!data.logged_in) {
+            setIsLoggedIn(false);
+
+            navigate("/login?next=/checkout", {
+              replace: true,
+              state: {
+                message:
+                  "Login Required: Please log in to continue to checkout.",
+              },
+            });
+          }
+        } else {
+          navigate("/login?next=/checkout", { replace: true });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setError("Unable to verify your login. Please try again.");
+        }
+      } finally {
+        if (!cancelled) {
+          setCheckingLogin(false);
+        }
+      }
+    }
+
+    checkLogin();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   function handleChange(event) {
     const { name, value } = event.target;
 
-    setFormData({
-      ...formData,
+    setFormData((previous) => ({
+      ...previous,
       [name]: value,
-    });
+    }));
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-
     setError("");
+
+    if (!isLoggedIn) {
+      navigate("/login?next=/checkout");
+      return;
+    }
 
     if (cartItems.length === 0) {
       setError("Your cart is empty.");
-
       return;
     }
 
@@ -45,15 +96,11 @@ function Checkout() {
     try {
       const orderData = {
         name: formData.name,
-
         phone: formData.phone,
-
         address: formData.address,
-
         payment_method: formData.payment_method,
-
         cart: cartItems.map((item) => ({
-          id: item.id,
+          product_id: item.id,
           quantity: item.quantity,
         })),
       };
@@ -62,21 +109,43 @@ function Checkout() {
 
       clearCart();
 
-      navigate(`/order-success/${result.order.id}`);
+      const orderId = result.order?.id ?? result.order_id;
+
+      if (!orderId) {
+        throw new Error("Order was submitted, but no order ID was returned.");
+      }
+
+      navigate(`/order-success/${orderId}`);
     } catch (error) {
-      setError(error.message);
+      setError(error.message || "Unable to place your order.");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkingLogin) {
+    return (
+      <div className="page">
+        <h1>Checking your account...</h1>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="page">
+        <h1>Login Required</h1>
+        <p>Please log in to continue to checkout.</p>
+        <p>Redirecting you to the login page...</p>
+      </div>
+    );
   }
 
   if (cartItems.length === 0) {
     return (
       <div className="page empty-cart">
         <h1>Your Cart is Empty</h1>
-
         <p>Add some products before checking out.</p>
-
         <Link to="/menu">Continue Shopping</Link>
       </div>
     );
@@ -87,13 +156,10 @@ function Checkout() {
       <h1>Checkout</h1>
 
       <div className="checkout-layout">
-        {/* Checkout Form */}
-
         <form className="checkout-form" onSubmit={handleSubmit}>
           <h2>Delivery Information</h2>
 
           <label>Full Name</label>
-
           <input
             type="text"
             name="name"
@@ -104,7 +170,6 @@ function Checkout() {
           />
 
           <label>Phone Number</label>
-
           <input
             type="tel"
             name="phone"
@@ -115,7 +180,6 @@ function Checkout() {
           />
 
           <label>Delivery Address</label>
-
           <textarea
             name="address"
             value={formData.address}
@@ -136,10 +200,8 @@ function Checkout() {
                 checked={formData.payment_method === "COD"}
                 onChange={handleChange}
               />
-
               <div>
                 <strong>Cash on Delivery</strong>
-
                 <p>Pay when your order arrives.</p>
               </div>
             </label>
@@ -152,10 +214,8 @@ function Checkout() {
                 checked={formData.payment_method === "CARD"}
                 onChange={handleChange}
               />
-
               <div>
                 <strong>Card</strong>
-
                 <p>Pay securely by card.</p>
               </div>
             </label>
@@ -168,8 +228,6 @@ function Checkout() {
           </button>
         </form>
 
-        {/* Order Summary */}
-
         <div className="checkout-summary">
           <h2>Your Order</h2>
 
@@ -177,7 +235,6 @@ function Checkout() {
             <div className="checkout-item" key={item.id}>
               <div>
                 <strong>{item.name}</strong>
-
                 <p>Qty: {item.quantity}</p>
               </div>
 
@@ -191,7 +248,6 @@ function Checkout() {
 
           <div className="summary-total">
             <span>Total</span>
-
             <strong>${cartTotal.toFixed(2)}</strong>
           </div>
         </div>

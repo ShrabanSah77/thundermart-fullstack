@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getProducts, getCategories } from "../services/api";
+import { useCart } from "../context/CartContext";
 
 function Menu() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [searchParams] = useSearchParams();
+
+  const { addToCart } = useCart();
 
   const searchQuery = searchParams.get("search") || "";
 
@@ -23,6 +26,7 @@ function Menu() {
             ? productsData
             : productsData.products || productsData.results || [],
         );
+
         setCategories(
           Array.isArray(categoriesData)
             ? categoriesData
@@ -52,7 +56,9 @@ function Menu() {
   return (
     <div className="page">
       <h1>
-        {searchQuery ? `Search results for "${searchQuery}"` : "Shop Products"}
+        {searchQuery
+          ? `Search results for "${decodeURIComponent(searchQuery)}"`
+          : "Shop Products"}
       </h1>
 
       {searchQuery && (
@@ -67,9 +73,7 @@ function Menu() {
           {categories.map((category) => (
             <div className="category-card" key={category.id}>
               <div className="category-icon">🛒</div>
-
               <h3>{category.name}</h3>
-
               {category.description && <p>{category.description}</p>}
             </div>
           ))}
@@ -87,12 +91,19 @@ function Menu() {
               {product.description && <p>{product.description}</p>}
 
               <strong>${product.price}</strong>
+
+              <button
+                type="button"
+                className="add-to-cart-button"
+                onClick={() => addToCart(product)}
+              >
+                🛒 Add to Cart
+              </button>
             </div>
           ))
         ) : (
           <div className="empty-cart">
             <h2>No products found</h2>
-
             <p>We couldn't find any products matching "{searchQuery}".</p>
           </div>
         )}

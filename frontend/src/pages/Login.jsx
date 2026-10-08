@@ -1,8 +1,16 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 
 function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const message = location.state?.message;
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -40,7 +48,9 @@ function Login() {
 
       console.log("Login successful:", data);
 
-      navigate("/");
+      const next = searchParams.get("next");
+
+      navigate(next === "/checkout" ? "/checkout" : "/");
     } catch (error) {
       console.error("Login error:", error);
       setError(error.message);
@@ -48,7 +58,14 @@ function Login() {
       setLoading(false);
     }
   };
-
+  {
+    message && (
+      <div className="login-required-message">
+        <h3>Login Required</h3>
+        <p>Please log in to continue to checkout.</p>
+      </div>
+    );
+  }
   return (
     <div className="page auth-page">
       <h1>Login</h1>
