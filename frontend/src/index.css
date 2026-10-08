@@ -808,3 +808,54 @@ textarea {
     flex-direction: column;
   }
 }
+
+/* =========================
+   Search Bar
+========================= */
+
+.search-bar {
+  display: flex;
+  align-items: center;
+
+  width: 350px;
+  height: 42px;
+
+  background: white;
+
+  border-radius: 6px;
+
+  overflow: hidden;
+}
+
+.search-bar input {
+  flex: 1;
+
+  height: 100%;
+
+  border: none;
+  outline: none;
+
+  padding: 0 14px;
+
+  font-size: 15px;
+}
+
+.search-bar button {
+  height: 100%;
+
+  padding: 0 15px;
+
+  border-radius: 0;
+
+  background: #e5e7eb;
+
+  color: #111827;
+
+  font-size: 18px;
+}
+
+.search-bar button:hover {
+  background: #d1d5db;
+
+  opacity: 1;
+}
