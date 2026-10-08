@@ -20,28 +20,6 @@ export async function getCategories() {
   return response.json();
 }
 
-// export async function placeOrder(orderData) {
-//   const response = await fetch(`${API_BASE_URL}/checkout/`, {
-//     method: "POST",
-
-//     headers: {
-//       "Content-Type": "application/json",
-//     },
-
-//     credentials: "include",
-
-//     body: JSON.stringify(orderData),
-//   });
-
-//   const data = await response.json();
-
-//   if (!response.ok) {
-//     throw new Error(data.error || "Failed to place order");
-//   }
-
-//   return data;
-// }
-
 export async function placeOrder(orderData) {
   const response = await fetch("/api/checkout/", {
     method: "POST",
@@ -57,22 +35,21 @@ export async function placeOrder(orderData) {
 
   const text = await response.text();
 
-  console.log("Checkout status:", response.status);
-  console.log("Checkout response:", text);
+  console.log("===== CHECKOUT DEBUG =====");
+  console.log("Status:", response.status);
+  console.log("URL:", response.url);
+  console.log("Response:", text);
+  console.log("==========================");
 
-  let data;
-
-  try {
-    data = JSON.parse(text);
-  } catch (error) {
+  if (!response.ok) {
     throw new Error(
-      `Server returned non-JSON response (${response.status}). Check Django checkout URL.`,
+      `Checkout failed (${response.status}): ${text.substring(0, 200)}`,
     );
   }
 
-  if (!response.ok) {
-    throw new Error(data.error || "Failed to place order");
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new Error(`Server returned non-JSON response (${response.status}).`);
   }
-
-  return data;
 }
