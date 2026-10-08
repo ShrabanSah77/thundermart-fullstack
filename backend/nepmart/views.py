@@ -1,6 +1,7 @@
 import json
-from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -46,6 +47,62 @@ def login_view(request):
         'next': next_page
     })
 
+@csrf_exempt
+def login_api(request):
+    if request.method != 'POST':
+        return JsonResponse(
+            {
+                'error': 'POST request required.'
+            },
+            status=405
+        )
+
+    try:
+        data = json.loads(request.body)
+
+        username = data.get('username')
+        password = data.get('password')
+
+        if not username or not password:
+            return JsonResponse(
+                {
+                    'error': 'Username and password are required.'
+                },
+                status=400
+            )
+
+        user = authenticate(
+            username=username,
+            password=password
+        )
+
+        if user is None:
+            return JsonResponse(
+                {
+                    'error': 'Invalid username or password.'
+                },
+                status=401
+            )
+
+        login(request, user)
+
+        return JsonResponse(
+            {
+                'success': True,
+                'message': 'Login successful.',
+                'username': user.username
+            },
+            status=200
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {
+                'error': 'Invalid JSON data.'
+            },
+            status=400
+        )
+
 # Register View
 
 def register_view(request):
@@ -68,6 +125,70 @@ def register_view(request):
             return redirect('login') #Redirect to the login page
         
     return render(request, 'signIn/register.html')
+
+@csrf_exempt
+def register_api(request):
+
+    if request.method != 'POST':
+        return JsonResponse(
+            {
+                'error': 'POST request required.'
+            },
+            status=405
+        )
+
+    try:
+        data = json.loads(request.body)
+
+        username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
+
+        if not username or not email or not password:
+            return JsonResponse(
+                {
+                    'error': 'All fields are required.'
+                },
+                status=400
+            )
+
+        if User.objects.filter(username=username).exists():
+            return JsonResponse(
+                {
+                    'error': 'Username already exists.'
+                },
+                status=400
+            )
+
+        if User.objects.filter(email=email).exists():
+            return JsonResponse(
+                {
+                    'error': 'Email already exists.'
+                },
+                status=400
+            )
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password
+        )
+
+        return JsonResponse(
+            {
+                'success': True,
+                'message': 'Account created successfully.'
+            },
+            status=201
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {
+                'error': 'Invalid JSON data.'
+            },
+            status=400
+        )
 
 # Forgot password view
 
@@ -262,6 +383,7 @@ def checkout(request):
 
     # React Checkout API
 
+@csrf_exempt
 @login_required
 def checkout_api(request):
 
@@ -275,12 +397,14 @@ def checkout_api(request):
 
     try:
         data = json.loads(request.body)
+
         name = data.get('name')
         phone = data.get('phone')
         address = data.get('address')
         payment_method = data.get('payment_method')
         cart = data.get('cart', [])
 
+        # Validate customer information
         if not name or not phone or not address:
             return JsonResponse(
                 {
@@ -289,6 +413,7 @@ def checkout_api(request):
                 status=400
             )
 
+        # Validate payment method
         if payment_method not in ['COD', 'CARD']:
             return JsonResponse(
                 {
@@ -297,9 +422,7 @@ def checkout_api(request):
                 status=400
             )
 
-        # Get React cart from request
-        cart = request.session.get('cart', {})
-
+        # Make sure cart is not empty
         if not cart:
             return JsonResponse(
                 {
@@ -308,51 +431,38 @@ def checkout_api(request):
                 status=400
             )
 
-        cart_items = []
         total = 0
+        order_items = []
 
-        for product_id, quantity in cart.items():
+        # Process cart products
+        for item in cart:
+
+            product_id = item.get('product_id')
+            quantity = int(item.get('quantity', 0))
+
+            if not product_id or quantity <= 0:
+                return JsonResponse(
+                    {
+                        'error': 'Invalid cart item.'
+                    },
+                    status=400
+                )
 
             product = get_object_or_404(
                 Product,
                 id=product_id
             )
 
-            quantity = int(quantity)
-
-            if quantity <= 0:
-                continue
-
-            # Check stock
-            if product.stock < quantity:
-                return JsonResponse(
-                    {
-                        'error': f'Only {product.stock} '
-                                 f'{product.name} available.'
-                    },
-                    status=400
-                )
-
             subtotal = product.price * quantity
-
             total += subtotal
 
-            cart_items.append({
+            order_items.append({
                 'product': product,
                 'quantity': quantity,
-                'subtotal': subtotal
+                'price': product.price
             })
 
-        if not cart_items:
-            return JsonResponse(
-                {
-                    'error': 'Your cart is empty.'
-                },
-                status=400
-            )
-
-        # Create Order
-
+        # Create order
         order = Order.objects.create(
             user=request.user,
             name=name,
@@ -362,45 +472,40 @@ def checkout_api(request):
             total_price=total
         )
 
-        # Create Order Items
-
-        for item in cart_items:
+        # Create order items
+        for item in order_items:
 
             OrderItem.objects.create(
                 order=order,
                 product=item['product'],
                 quantity=item['quantity'],
-                price=item['product'].price
+                price=item['price']
             )
 
-            # Reduce stock
-            item['product'].stock -= item['quantity']
-            item['product'].save()
-
-        # Empty Django session cart
+        # Clear Django session cart
         request.session['cart'] = {}
         request.session.modified = True
 
+        # Return JSON to React
         return JsonResponse(
             {
                 'success': True,
                 'message': 'Order placed successfully.',
-                'order': {
-                    'id': order.id,
-                    'name': order.name,
-                    'total_price': float(
-                        order.total_price
-                    ),
-                    'status': order.status,
-                    'payment_method': order.payment_method,
-                    'created_at': order.created_at.isoformat()
-                }
+                'order_id': order.id,
+                'total_price': total
             },
-            status=201
+            status=200
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {
+                'error': 'Invalid JSON data.'
+            },
+            status=400
         )
 
     except Exception as e:
-
         return JsonResponse(
             {
                 'error': str(e)
