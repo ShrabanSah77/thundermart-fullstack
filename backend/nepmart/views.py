@@ -102,6 +102,16 @@ def login_api(request):
             },
             status=400
         )
+    
+# Current User view
+
+@login_required
+def current_user_api(request):
+    return JsonResponse({
+        'logged_in': True,
+        'username': request.user.username,
+        'email': request.user.email,
+    })
 
 # Register View
 
@@ -222,6 +232,23 @@ def forgot_password_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+@csrf_exempt
+def logout_api(request):
+    if request.method != 'POST':
+        return JsonResponse(
+            {
+                'error': 'POST request required.'
+            },
+            status=405
+        )
+
+    logout(request)
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Logout successful.'
+    })
 
 # Customer View
 
