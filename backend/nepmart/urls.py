@@ -22,5 +22,7 @@ path('api/products/', views.product_api, name='product_api'),
 path('api/categories/', views.category_api, name= 'category_api'),
 path('api/login/', views.login_api, name='login_api'),
 path('api/register/', views.register_api, name='register_api'),
+path('api/current-user/', views.current_user_api, name='current_user_api'),
 path('api/checkout/', views.checkout_api, name='checkout_api'),
+path('api/logout/', views.logout_api, name='logout_api'),
 ]
