@@ -1,86 +1,102 @@
 import { useEffect, useState } from "react";
-
+import { useSearchParams } from "react-router-dom";
 import { getProducts, getCategories } from "../services/api";
-
-import ProductCard from "../components/ProductCard";
-import CategoryCard from "../components/categoryCard";
 
 function Menu() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [searchParams] = useSearchParams();
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const searchQuery = searchParams.get("search") || "";
 
   useEffect(() => {
-    async function loadStore() {
+    async function loadData() {
       try {
-        const [productData, categoryData] = await Promise.all([
-          getProducts(),
-          getCategories(),
-        ]);
+        const productsData = await getProducts();
+        const categoriesData = await getCategories();
 
-        setProducts(productData.products);
-        setCategories(categoryData.categories);
+        console.log("Products:", productsData);
+        console.log("Categories:", categoriesData);
+
+        setProducts(
+          Array.isArray(productsData)
+            ? productsData
+            : productsData.products || productsData.results || [],
+        );
+        setCategories(
+          Array.isArray(categoriesData)
+            ? categoriesData
+            : categoriesData.categories || categoriesData.results || [],
+        );
       } catch (error) {
-        console.error(error);
-
-        setError("Unable to load ThunderMart products.");
-      } finally {
-        setLoading(false);
+        console.error("Failed to load shop data:", error);
       }
     }
 
-    loadStore();
+    loadData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="page">
-        <h1>ThunderMart Shop</h1>
-        <p>Loading products...</p>
-      </div>
-    );
-  }
+  const query = searchQuery.toLowerCase().trim();
 
-  if (error) {
+  const filteredProducts = products.filter((product) => {
+    if (!query) {
+      return true;
+    }
+
     return (
-      <div className="page">
-        <h1>ThunderMart Shop</h1>
-        <p>{error}</p>
-      </div>
+      product.name?.toLowerCase().includes(query) ||
+      product.description?.toLowerCase().includes(query)
     );
-  }
+  });
 
   return (
     <div className="page">
-      <h1>Shop at ThunderMart</h1>
+      <h1>
+        {searchQuery ? `Search results for "${searchQuery}"` : "Shop Products"}
+      </h1>
 
-      <p>Find everything you need for your home.</p>
+      {searchQuery && (
+        <p>
+          {filteredProducts.length} product
+          {filteredProducts.length !== 1 ? "s" : ""} found
+        </p>
+      )}
 
-      {/* Categories */}
-
-      <section>
-        <h2>Shop by Category</h2>
-
+      {!searchQuery && categories.length > 0 && (
         <div className="categories">
           {categories.map((category) => (
-            <CategoryCard key={category.id} category={category} />
+            <div className="category-card" key={category.id}>
+              <div className="category-icon">🛒</div>
+
+              <h3>{category.name}</h3>
+
+              {category.description && <p>{category.description}</p>}
+            </div>
           ))}
         </div>
-      </section>
+      )}
 
-      {/* Products */}
+      <div className="products">
+        {filteredProducts.length > 0 ? (
+          filteredProducts.map((product) => (
+            <div className="product-card" key={product.id}>
+              <div className="product-image">🛒</div>
 
-      <section>
-        <h2>All Products</h2>
+              <h3>{product.name}</h3>
 
-        <div className="products">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
+              {product.description && <p>{product.description}</p>}
+
+              <strong>${product.price}</strong>
+            </div>
+          ))
+        ) : (
+          <div className="empty-cart">
+            <h2>No products found</h2>
+
+            <p>We couldn't find any products matching "{searchQuery}".</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

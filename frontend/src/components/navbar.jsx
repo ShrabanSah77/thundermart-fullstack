@@ -43,11 +43,13 @@ function Navbar() {
 
           <Link to="/my-orders">My Orders</Link>
 
-          <Link to="/login">Account</Link>
-
           <Link to="/cart" className="cart-link">
             🛒 Cart
             {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
+          </Link>
+
+          <Link to="/login" className="login-link">
+            Account
           </Link>
         </div>
       </div>

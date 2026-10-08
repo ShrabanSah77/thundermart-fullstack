@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function Home() {
   return (
     <div className="page">
@@ -5,13 +7,13 @@ function Home() {
         <h1>Welcome to ThunderMart</h1>
 
         <p>
-          Fresh and organin vegetables, Attractive Household materials,
+          Fresh and organic vegetables, attractive household materials,
           delivered right to your door.
         </p>
 
-        <a href="/menu" className="button">
-          Order Now
-        </a>
+        <Link to="/menu" className="button">
+          Shop Now
+        </Link>
       </section>
 
       <section className="home-section">
@@ -19,20 +21,19 @@ function Home() {
 
         <div className="features">
           <div className="feature-card">
-            <h3>Fresh and Organic vegetables</h3>
+            <h3>🥦 Fresh & Organic</h3>
             <p>
-              Numbers of household items and all the type of groceries you need.
+              Fresh vegetables, household items, and all the groceries you need.
             </p>
           </div>
 
           <div className="feature-card">
-            <h3>🚀 Fast Delivery option</h3>
-            <p>Pickup option in your convinent time.</p>
+            <h3>🚀 Fast Delivery</h3>
+            <p>Convenient delivery and pickup options available.</p>
           </div>
 
           <div className="feature-card">
             <h3>⭐ Great Service</h3>
-            <h3>⭐ Awesome Products</h3>
             <p>We care about providing an excellent customer experience.</p>
           </div>
         </div>
