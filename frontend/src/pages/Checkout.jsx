@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { placeOrder } from "../services/api";
 
+// Checkout Funtions
+
 function Checkout() {
   const navigate = useNavigate();
 
@@ -11,6 +13,7 @@ function Checkout() {
 
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     phone: "",
     address: "",
     payment_method: "COD",
@@ -36,14 +39,16 @@ function Checkout() {
         if (response.ok) {
           const data = await response.json();
 
-          if (!data.logged_in) {
+          if (data.logged_in) {
+            setIsLoggedIn(true);
+          } else {
             setIsLoggedIn(false);
 
             navigate("/login?next=/checkout", {
               replace: true,
               state: {
                 message:
-                  "Login Required: Please log in to continue to checkout.",
+                  "First Login Required: Please log in to continue to checkout.",
               },
             });
           }
@@ -104,6 +109,28 @@ function Checkout() {
           quantity: item.quantity,
         })),
       };
+
+      const customerResponse = await fetch("/api/customer-details/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+        }),
+      });
+
+      const customerResult = await customerResponse.json();
+
+      if (!customerResponse.ok) {
+        throw new Error(
+          customerResult.error || "Could not save customer details.",
+        );
+      }
 
       const result = await placeOrder(orderData);
 
@@ -166,6 +193,16 @@ function Checkout() {
             value={formData.name}
             onChange={handleChange}
             placeholder="Enter your full name"
+            required
+          />
+
+          <label>Email Address</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Enter your email address"
             required
           />
 
@@ -255,5 +292,48 @@ function Checkout() {
     </div>
   );
 }
+
+// Loggin Effect
+
+useEffect(() => {
+  if (!isLoggedIn) return;
+
+  let cancelled = false;
+
+  async function loadCustomerDetails() {
+    try {
+      const response = await fetch("/api/customer-details/", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not load customer details.");
+      }
+
+      if (!cancelled) {
+        setFormData((previous) => ({
+          ...previous,
+          name: data.name || "",
+          email: data.email || "",
+          phone: data.phone || "",
+          address: data.address || "",
+        }));
+      }
+    } catch (error) {
+      if (!cancelled) {
+        setError(error.message || "Could not load customer details.");
+      }
+    }
+  }
+
+  loadCustomerDetails();
+
+  return () => {
+    cancelled = true;
+  };
+}, [isLoggedIn]);
 
 export default Checkout;
