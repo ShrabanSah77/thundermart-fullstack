@@ -47,6 +47,8 @@ def login_view(request):
         'next': next_page
     })
 
+# Login API JS view
+
 @csrf_exempt
 def login_api(request):
     if request.method != 'POST':
@@ -103,7 +105,7 @@ def login_api(request):
             status=400
         )
     
-# Current User view
+# Current User JS view
 
 @login_required
 def current_user_api(request):
@@ -135,6 +137,8 @@ def register_view(request):
             return redirect('login') #Redirect to the login page
         
     return render(request, 'signIn/register.html')
+
+# Register API JS view
 
 @csrf_exempt
 def register_api(request):
@@ -233,6 +237,8 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+#Logout API JS View
+
 @csrf_exempt
 def logout_api(request):
     if request.method != 'POST':
@@ -256,7 +262,101 @@ def customer_list(request):
     customer = Customer.objects.all()
     return HttpResponse(f"{list(customer)}")
 
-# Order View
+# Customer details js API
+
+
+@csrf_exempt
+def customer_details_api(request):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"error": "Please log in first."},
+            status=401
+        )
+
+    user = request.user
+
+    if request.method == "GET":
+        customer = Customer.objects.filter(user=user).first()
+
+        if customer:
+            return JsonResponse({
+                "name": customer.name,
+                "email": customer.email,
+                "phone": customer.phone or "",
+                "address": customer.address or "",
+            })
+
+        return JsonResponse({
+            "name": user.get_full_name() or user.username,
+            "email": user.email or "",
+            "phone": "",
+            "address": "",
+        })
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return JsonResponse(
+                {"error": "Invalid JSON data."},
+                status=400
+            )
+
+        name = str(data.get("name", "")).strip()
+        email = str(data.get("email", "")).strip()
+        phone = str(data.get("phone", "")).strip()
+        address = str(data.get("address", "")).strip()
+
+        if not all([name, email, phone, address]):
+            return JsonResponse(
+                {"error": "Please complete all customer details."},
+                status=400
+            )
+
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError
+
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse(
+                {"error": "Please enter a valid email address."},
+                status=400
+            )
+
+        customer = Customer.objects.filter(user=user).first()
+
+        # Do not allow an email already used by another customer.
+        email_exists = Customer.objects.filter(
+            email__iexact=email
+        ).exclude(user=user).exists()
+
+        if email_exists:
+            return JsonResponse(
+                {"error": "This email is already associated with another customer."},
+                status=400
+            )
+
+        if customer is None:
+            customer = Customer(user=user)
+
+        customer.name = name
+        customer.email = email
+        customer.phone = phone
+        customer.address = address
+        customer.save()
+
+        return JsonResponse({
+            "success": True,
+            "message": "Customer details saved."
+        })
+
+    return JsonResponse(
+        {"error": "Method not allowed."},
+        status=405
+    )
+
+# Order JS View
 
 @login_required
 def my_orders(request):
@@ -344,7 +444,7 @@ def remove_from_cart(request, product_id):
     request.session['cart'] = cart
     return redirect('cart')
 
-# Checkout View
+# Checkout JS View
 
 @login_required
 def checkout(request):
@@ -408,7 +508,7 @@ def checkout(request):
         'total': total
     })
 
-    # React Checkout API
+# React Checkout JS API
 
 @csrf_exempt
 @login_required
@@ -578,6 +678,7 @@ def product_api(request):
         'products': data
     })
 
+# Category API JS view
 
 def category_api(request):
     categories = Category.objects.all().order_by('name')
